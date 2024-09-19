@@ -1,0 +1,172 @@
+package com.qmetry.qaf.example.test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class JsonUtility_MS {
+
+    public static void main(String[] args) {
+        try {
+            // Path to the JSON file
+            File jsonFile = new File("test.json");
+
+            // Parse the JSON file
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonFile);
+
+            // Create an instance of JsonUtility_MS to call the methods
+            JsonUtility_MS jsonUtility = new JsonUtility_MS();
+
+            // Example method calls with various JSON paths for extracting values
+            List<String> nameValues = jsonUtility.extractValuesByPath(rootNode, "$.datasets[0].name");
+            System.out.println("Name Values: " + nameValues);
+
+            List<String> allNames = jsonUtility.extractValuesByPath(rootNode, "$.datasets[*].name");
+            System.out.println("All Names: " + allNames);
+
+            List<String> boundaries = jsonUtility.extractValuesByPath(rootNode, "$.datasets[0].boundaries[0].frontToBack[0]");
+            System.out.println("Boundaries: " + boundaries);
+
+            List<String> allBoundaries = jsonUtility.extractValuesByPath(rootNode, "$.datasets[*].boundaries[0].frontToBack[0]");
+            System.out.println("All Boundaries: " + allBoundaries);
+
+            List<String> domainNames = jsonUtility.extractValuesByPath(rootNode, "$.datasets[0].dgcDataDomains[\"FRM DGC Glossary\"][0].domainName");
+            System.out.println("Domain Names: " + domainNames);
+
+            List<String> allDomainNames = jsonUtility.extractValuesByPath(rootNode, "$.datasets[*].dgcDataDomains[\"FRM DGC Glossary\"][0].domainName");
+            System.out.println("All Domain Names: " + allDomainNames);
+
+            // Example method calls for counting items
+            int nameCount = jsonUtility.countItemsByPath(rootNode, "$.datasets[0].name");
+            System.out.println("Name Count: " + nameCount);
+
+            int allNamesCount = jsonUtility.countItemsByPath(rootNode, "$.datasets[*].name");
+            System.out.println("All Names Count: " + allNamesCount);
+
+            int boundariesCount = jsonUtility.countItemsByPath(rootNode, "$.datasets[*].boundaries[0].frontToBack[0]");
+            System.out.println("Boundaries Count: " + boundariesCount);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Extracts values from the given JSON node based on the specified JSONPath-like path.
+     * This method handles array indexing and deep nested structures.
+     *
+     * @param rootNode the root JSON node
+     * @param jsonPath the JSON path to extract values from (e.g., $.datasets[0].name)
+     * @return a list of extracted values
+     */
+    public List<String> extractValuesByPath(JsonNode rootNode, String jsonPath) {
+        List<String> result = new ArrayList<>();
+
+        // Remove the leading "$." from the JSONPath
+        jsonPath = jsonPath.startsWith("$.") ? jsonPath.substring(2) : jsonPath;
+
+        // Split the path into individual components
+        String[] pathComponents = jsonPath.split("\\.");
+
+        JsonNode currentNode = rootNode;
+        for (String component : pathComponents) {
+            // Handle array access: [0], [1], etc.
+            if (component.matches(".*\\[\\d+\\]")) {
+                String fieldName = component.substring(0, component.indexOf('['));
+                int index = Integer.parseInt(component.replaceAll("[^\\d]", ""));
+                currentNode = currentNode.path(fieldName);
+                if (currentNode.isArray() && currentNode.size() > index) {
+                    currentNode = currentNode.get(index);
+                } else {
+                    return result; // Invalid array index
+                }
+            } else if (component.matches(".*\\[\\*\\]")) {
+                String fieldName = component.substring(0, component.indexOf('['));
+                currentNode = currentNode.path(fieldName);
+                if (currentNode.isArray()) {
+                    Iterator<JsonNode> elements = currentNode.elements();
+                    while (elements.hasNext()) {
+                        result.add(elements.next().asText());
+                    }
+                }
+                return result;
+            } else {
+                currentNode = currentNode.path(component);
+            }
+
+            // Break if node is missing
+            if (currentNode.isMissingNode()) {
+                return result;
+            }
+        }
+
+        if (currentNode.isValueNode()) {
+            result.add(currentNode.asText());
+        } else if (currentNode.isArray()) {
+            currentNode.forEach(node -> result.add(node.asText()));
+        }
+
+        return result;
+    }
+
+    /**
+     * Counts the number of items at the given JSON path.
+     *
+     * @param rootNode the root JSON node
+     * @param jsonPath the JSON path to count items from (e.g., $.datasets[*].name)
+     * @return the number of items at the specified path
+     */
+    public int countItemsByPath(JsonNode rootNode, String jsonPath) {
+        List<String> extractedValues = extractValuesByPath(rootNode, jsonPath);
+        return extractedValues.size();
+    }
+}
+
+//Explanation:
+//Main Method:
+//
+//Demonstrates both value extraction and item counting using various JSONPath-like expressions.
+//Method: extractValuesByPath:
+//
+//Extracts values from the given JsonNode based on a JSONPath-like expression.
+//Supports wildcards (e.g., [*]) and indexed arrays (e.g., [0]).
+//Extracts values at the specified path and returns a list of strings.
+//Method: countItemsByPath:
+//
+//Counts the number of items at a given JSON path.
+//Reuses the extractValuesByPath method and simply returns the size of the extracted list.
+//Example Queries and Expected Outputs:
+//Extract values for a single dataset name:
+//
+//Path: $.datasets[0].name
+//Output: ["SDC Dataset Element PSD_02"]
+//Extract all dataset names:
+//
+//Path: $.datasets[*].name
+//Output: ["SDC Dataset Element PSD_02", "SDC Dataset Element PSD_03"]
+//Extract boundaries for a specific dataset:
+//
+//Path: $.datasets[0].boundaries[0].frontToBack[0]
+//Output: ["Asset Management"]
+//Extract boundaries for all datasets:
+//
+//Path: $.datasets[*].boundaries[0].frontToBack[0]
+//Output: ["Asset Management", "Asset Management1"]
+//Count the number of dataset names:
+//
+//Path: $.datasets[0].name
+//Output: 1
+//Count all dataset names:
+//
+//Path: $.datasets[*].name
+//Output: 2
+//Count the number of boundaries for all datasets:
+//
+//Path: $.datasets[*].boundaries[0].frontToBack[0]
+//Output: 2
