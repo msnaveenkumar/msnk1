@@ -1,0 +1,154 @@
+package com.qmetry.qaf.example.test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+public class JsonUtility_MS {
+
+    public static void main(String[] args) {
+        // JSON as a string input
+        String jsonString = "{ \"datasets\": [ { \"name\": \"SDC Dataset Element PSD_02\", \"description\": \"Testing Description in RightContainer SDH\", \"format\": \"JSON\", \"boundaries\": [ { \"frontToBack\": [ \"Asset Management\" ] } ], \"dgcDataDomains\": { \"FRM DGC Glossary\": [ { \"domainName\": \"Analytics\" } ] }, \"reports\": [ { \"catalogId\": \"91b18e2e-7656-4d6e-90d9-667eb04b6e27\" } ], \"upstreamDatasets\": [ { \"name\": \"DS_1503_932\", \"producerEonId\": 932 } ], \"datasetElements\": [ { \"name\": \"SDC Dataset Elements PSD_01\", \"reportAttributes\": [ { \"catalogId\": \"e1c336aa-2d99-458d-bc70-d5d25542c739\" }, { \"catalogId\": \"6b11237a-7a30-4f1c-91d2-0fe0d635eaec\" } ], \"upstreamDatasetElements\": [ { \"datasetEonId\": 932, \"datasetElementName\": \"DS_1503_932\", \"datasetElementNames\": [ \"DS_WAR\" ] } ] } ] }, { \"name\": \"SDC Dataset Element PSD_03\", \"description\": \"Testing Description in RightContainer SDH1\", \"format\": \"JSON1\", \"boundaries\": [ { \"frontToBack\": [ \"Asset Management1\" ] } ], \"dgcDataDomains\": { \"FRM DGC Glossary\": [ { \"domainName\": \"Analytics1\" } ] }, \"reports\": [ { \"catalogId\": \"91b18e2e-7656-4d6e-90d9-667eb04b6e271\" } ], \"upstreamDatasets\": [ { \"name\": \"DS_1503_9321\", \"producerEonId\": 9322 } ], \"datasetElements\": [ { \"name\": \"SDC Dataset Elements PSD_03\", \"reportAttributes\": [ { \"catalogId\": \"e1c336aa-2d99-458d-bc70-d5d25542c7313\" }, { \"catalogId\": \"6b11237a-7a30-4f1c-91d2-0fe0d635eaec3\" } ], \"upstreamDatasetElements\": [ { \"datasetEonId\": 9323, \"datasetElementName\": \"DS_1503_9323\", \"datasetElementNames\": [ \"DS_WARr\" ] } ] } ] } ] }";
+
+        try {
+            // Parse the JSON string
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonString);
+
+            // Create an instance of JsonUtility_MS to call the methods
+            JsonUtility_MS jsonUtility = new JsonUtility_MS();
+
+            // Example 1: Extract domain names using recursive search (i.e., $...domainName)
+            List<String> domainNames = jsonUtility.extractRecursiveValuesByKey(rootNode, "domainName");
+            System.out.println("Domain Names: " + domainNames); // Output: ["Analytics", "Analytics1"]
+
+            // Example 2: Extract dataset element names using nested search (i.e., $..upstreamDatasetElements[0].datasetElementNames[0])
+            List<String> datasetElementNames = jsonUtility.extractNestedValues(rootNode, "$..upstreamDatasetElements[0].datasetElementNames[0]");
+            System.out.println("Dataset Element Names: " + datasetElementNames); // Output: ["DS_WAR", "DS_WARr"]
+
+            // Example 3: Extract datasets[0].name (i.e., $.datasets[0].name)
+            List<String> dataset0Name = jsonUtility.extractNestedValues(rootNode, "$.datasets[0].name");
+            System.out.println("Dataset 0 Name: " + dataset0Name); // Output: ["SDC Dataset Element PSD_02"]
+
+            // Example 4: Extract datasets[2].name (Note: there are only 2 datasets, this will return empty)
+            List<String> dataset2Name = jsonUtility.extractNestedValues(rootNode, "$.datasets[2].name");
+            System.out.println("Dataset 2 Name: " + dataset2Name); // Output: []
+
+            // Example 5: Extract datasets[0].boundaries[0].frontToBack[0] (i.e., $.datasets[0].boundaries[0].frontToBack[0])
+            List<String> boundary0FrontToBack = jsonUtility.extractNestedValues(rootNode, "$.datasets[0].boundaries[0].frontToBack[0]");
+            System.out.println("Boundaries 0 FrontToBack: " + boundary0FrontToBack); // Output: ["Asset Management"]
+
+            // Example 6: Extract datasets[1].boundaries[0].frontToBack[0] (i.e., $.datasets[1].boundaries[0].frontToBack[0])
+            List<String> boundary1FrontToBack = jsonUtility.extractNestedValues(rootNode, "$.datasets[1].boundaries[0].frontToBack[0]");
+            System.out.println("Boundaries 1 FrontToBack: " + boundary1FrontToBack); // Output: ["Asset Management1"]
+
+            // Example 7: Extract datasets[*].boundaries[0].frontToBack[0] (i.e., $.datasets[*].boundaries[0].frontToBack[0])
+            List<String> allBoundariesFrontToBack = jsonUtility.extractNestedValues(rootNode, "$.datasets[*].boundaries[0].frontToBack[0]");
+            System.out.println("All Boundaries FrontToBack: " + allBoundariesFrontToBack); // Output: ["Asset Management", "Asset Management1"]
+
+            // Example 8: Extract datasets[0].dgcDataDomains["FRM DGC Glossary"][0].domainName (i.e., $.datasets[0].dgcDataDomains["FRM DGC Glossary"][0].domainName)
+            List<String> dataset0DomainName = jsonUtility.extractNestedValues(rootNode, "$.datasets[0].dgcDataDomains[\"FRM DGC Glossary\"][0].domainName");
+            System.out.println("Dataset 0 Domain Name: " + dataset0DomainName); // Output: ["Analytics"]
+
+            // Example 9: Extract datasets[*].dgcDataDomains["FRM DGC Glossary"][0].domainName (i.e., $.datasets[*].dgcDataDomains["FRM DGC Glossary"][0].domainName)
+            List<String> allDatasetsDomainName = jsonUtility.extractNestedValues(rootNode, "$.datasets[*].dgcDataDomains[\"FRM DGC Glossary\"][0].domainName");
+            System.out.println("All Datasets Domain Name: " + allDatasetsDomainName); // Output: ["Analytics", "Analytics1"]
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Utility methods (as already defined in previous code)
+
+    public List<String> extractRecursiveValuesByKey(JsonNode rootNode, String key) {
+        List<String> result = new ArrayList<>();
+        recursiveSearch(rootNode, key, result);
+        return result;
+    }
+
+    private void recursiveSearch(JsonNode node, String key, List<String> result) {
+        if (node.isObject()) {
+            Iterator<String> fieldNames = node.fieldNames();
+            while (fieldNames.hasNext()) {
+                String fieldName = fieldNames.next();
+                JsonNode childNode = node.get(fieldName);
+
+                if (fieldName.equals(key) && childNode.isValueNode()) {
+                    result.add(childNode.asText());
+                } else {
+                    recursiveSearch(childNode, key, result);
+                }
+            }
+        } else if (node.isArray()) {
+            for (JsonNode arrayElement : node) {
+                recursiveSearch(arrayElement, key, result);
+            }
+        }
+    }
+
+    public List<String> extractNestedValues(JsonNode rootNode, String jsonPath) {
+        List<String> result = new ArrayList<>();
+
+        jsonPath = jsonPath.startsWith("$.") ? jsonPath.substring(2) : jsonPath;
+        String[] pathComponents = jsonPath.split("\\.");
+
+        JsonNode currentNode = rootNode;
+        for (String component : pathComponents) {
+            if (component.matches(".*\\[\\d+\\]")) {
+                String fieldName = component.substring(0, component.indexOf('['));
+                int index = Integer.parseInt(component.replaceAll("[^\\d]", ""));
+                currentNode = currentNode.path(fieldName);
+                if (currentNode.isArray() && currentNode.size() > index) {
+                    currentNode = currentNode.get(index);
+                } else {
+                    return result;
+                }
+            } else if (component.matches(".*\\[\\*\\]")) {
+                String fieldName = component.substring(0, component.indexOf('['));
+                currentNode = currentNode.path(fieldName);
+                if (currentNode.isArray()) {
+                    Iterator<JsonNode> elements = currentNode.elements();
+                    while (elements.hasNext()) {
+                        result.add(elements.next().asText());
+                    }
+                }
+                return result;
+            } else if (component.contains("[*]")) {
+                currentNode = handleWildcard(currentNode, component.replace("[*]", ""));
+            } else {
+                currentNode = currentNode.path(component);
+            }
+
+            if (currentNode.isMissingNode()) {
+                return result;
+            }
+        }
+
+        if (currentNode.isValueNode()) {
+            result.add(currentNode.asText());
+        } else if (currentNode.isArray()) {
+            for (JsonNode node : currentNode) {
+                result.add(node.asText());
+            }
+        }
+
+        return result;
+    }
+
+    private JsonNode handleWildcard(JsonNode node, String fieldName) {
+        List<String> result = new ArrayList<>();
+        if (node.isArray()) {
+            for (JsonNode arrayElement : node) {
+                if (arrayElement.has(fieldName)) {
+                    result.add(arrayElement.path(fieldName).asText());
+                }
+            }
+        }
+        return node;
+    }
+}
