@@ -1,0 +1,87 @@
+package com.qmetry.qaf.example.parser;
+
+import com.jayway.jsonpath.JsonPath;
+import net.minidev.json.JSONArray;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+public class JsonPathExtractor4 {
+
+    public static void main(String[] args) {
+        try {
+            // Load JSON from file
+            String jsonFilePath = "test2.json"; // Specify your JSON file path here
+            String jsonString = readJsonFromFile(jsonFilePath);
+
+            // Extracting values from JSON using methods
+            extractAndPrintValues(jsonString);
+
+            // Extracting recursively with $..frontToBack[0]
+            extractFrontToBack(jsonString);
+
+        } catch (IOException e) {
+            System.err.println("Error reading JSON file: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reads a JSON string from a specified file.
+     *
+     * @param filePath The path of the file to read.
+     * @return A string containing the JSON data from the file.
+     * @throws IOException If there is an error while reading the file.
+     */
+    private static String readJsonFromFile(String filePath) throws IOException {
+        // Reads all bytes from the file and converts it to a string
+        return new String(Files.readAllBytes(Paths.get(filePath)));
+    }
+
+    /**
+     * Extracts various values from the JSON string using JSONPath and prints the results.
+     *
+     * @param jsonString The JSON content in string format.
+     */
+    private static void extractAndPrintValues(String jsonString) {
+        // Extracting name fields from datasets
+        String name0 = JsonPath.read(jsonString, "$.datasets[0].name");
+        String name1 = JsonPath.read(jsonString, "$.datasets[1].name");
+        JSONArray allNames = JsonPath.read(jsonString, "$.datasets[*].name");
+
+        // Extracting boundaries fields
+        String boundary0 = JsonPath.read(jsonString, "$.datasets[0].boundaries[0].frontToBack[0]");
+        String boundary1 = JsonPath.read(jsonString, "$.datasets[1].boundaries[0].frontToBack[0]");
+        JSONArray allBoundaries = JsonPath.read(jsonString, "$.datasets[*].boundaries[0].frontToBack[0]");
+        JSONArray allBoundaries1 = JsonPath.read(jsonString, "$..frontToBack[0]");
+        // Extracting domainName fields
+        String domainName0 = JsonPath.read(jsonString, "$.datasets[0].dgcDataDomains['FRM DGC Glossary'][0].domainName");
+        JSONArray allDomainNames = JsonPath.read(jsonString, "$.datasets[*].dgcDataDomains['FRM DGC Glossary'][0].domainName");
+
+        // Print results
+        System.out.println("$.datasets[0].name: " + name0);
+        System.out.println("$.datasets[1].name: " + name1);
+        System.out.println("$.datasets[*].name: " + allNames);
+
+        System.out.println("$.datasets[0].boundaries[0].frontToBack[0]: " + boundary0);
+        System.out.println("$.datasets[1].boundaries[0].frontToBack[0]: " + boundary1);
+        System.out.println("$.datasets[*].boundaries[0].frontToBack[0]: " + allBoundaries);
+        System.out.println("$.datasets[*].boundaries[0].frontToBack[0]: " + allBoundaries1);
+
+        System.out.println("$.datasets[0].dgcDataDomains['FRM DGC Glossary'][0].domainName: " + domainName0);
+        System.out.println("$.datasets[*].dgcDataDomains['FRM DGC Glossary'][0].domainName: " + allDomainNames);
+    }
+
+    /**
+     * Extracts all values from "frontToBack[0]" across all levels using the recursive JSONPath.
+     *
+     * @param jsonString The JSON content in string format.
+     */
+    private static void extractFrontToBack(String jsonString) {
+        // Using recursive JSONPath to find all "frontToBack[0]" values
+        JSONArray frontToBackValues = JsonPath.read(jsonString, "$..frontToBack[0]");
+        
+        // Print the extracted values
+        System.out.println("$..frontToBack[0]: " + frontToBackValues);
+    }
+}
