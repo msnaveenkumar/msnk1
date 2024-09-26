@@ -1,0 +1,63 @@
+import net.minidev.json.JSONArray;
+import java.util.ArrayList;
+import java.util.List;
+
+public class JsonElementVerifier {
+
+    /**
+     * This method checks whether all elements in a List<String> exist in a JSONArray.
+     * 
+     * @param jsonArray JSONArray that needs to be searched.
+     * @param valueList List<String> of elements to check for existence in the JSONArray.
+     * @return boolean - true if all elements from valueList are present in the jsonArray, false otherwise.
+     */
+    public boolean doesElementExist(JSONArray jsonArray, List<String> valueList) {
+        // Convert JSONArray to ArrayList<String>
+        List<String> jsonArrayToList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            if (obj instanceof String) {
+                jsonArrayToList.add((String) obj);
+            }
+        }
+
+        // Check if all elements in valueList are present in jsonArrayToList
+        for (String value : valueList) {
+            if (!jsonArrayToList.contains(value)) {
+                return false; // Return false as soon as an element is not found
+            }
+        }
+        return true; // Return true if all elements are found
+    }
+
+    /**
+     * Example usage of the doesElementExist method.
+     */
+    public void exampleUsage() {
+        // Example JSONArray (net.minidev.json)
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.add("Asset Management");
+        jsonArray.add("Boundary Name");
+        jsonArray.add("Front To Back Platform");
+
+        // Example List<String>
+        List<String> valueList = List.of("Asset Management", "Boundary Name");
+
+        // Verify if all elements in valueList exist in the jsonArray
+        boolean result = doesElementExist(jsonArray, valueList);
+
+        // Print the result
+        if (result) {
+            System.out.println("All elements in the value list are present in the JSON array.");
+        } else {
+            System.out.println("Some elements in the value list are missing from the JSON array.");
+        }
+    }
+    
+    public static void main(String[] args) {
+        // Create an instance of JsonElementVerifier
+        JsonElementVerifier verifier = new JsonElementVerifier();
+
+        // Run the example usage
+        verifier.exampleUsage();
+    }
+}
