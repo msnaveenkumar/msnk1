@@ -1,0 +1,66 @@
+import net.minidev.json.JSONArray;
+import java.util.ArrayList;
+import java.util.List;
+
+public class BoundaryListChecker {
+
+    /**
+     * This method checks if "Asset Management" exists in both a nested JSONArray and a List<String>.
+     * 
+     * @param boundrylistFromJson A nested JSONArray containing boundary information.
+     * @param boundrylistFromUI A List<String> representing boundary data from the UI.
+     * @param elementToCheck The element that needs to be checked for existence ("Asset Management").
+     * @return boolean - true if the element exists in both the JSONArray and the List, false otherwise.
+     */
+    public boolean doesElementExistInBoth(JSONArray boundrylistFromJson, List<String> boundrylistFromUI, String elementToCheck) {
+        // Extract the inner JSON array and flatten it to a List<String>
+        List<String> jsonFlattenedList = new ArrayList<>();
+        
+        for (Object obj : boundrylistFromJson) {
+            if (obj instanceof JSONArray) {
+                JSONArray innerArray = (JSONArray) obj;
+                for (Object innerObj : innerArray) {
+                    if (innerObj instanceof String) {
+                        jsonFlattenedList.add((String) innerObj);
+                    }
+                }
+            }
+        }
+
+        // Check if the element exists in both the flattened JSON list and the UI list
+        return jsonFlattenedList.contains(elementToCheck) && boundrylistFromUI.contains(elementToCheck);
+    }
+
+    /**
+     * Example usage of the doesElementExistInBoth method.
+     */
+    public void exampleUsage() {
+        // Example boundary list from JSON (nested JSONArray)
+        JSONArray boundrylistFromJson = new JSONArray();
+        JSONArray innerJsonArray = new JSONArray();
+        innerJsonArray.add("Asset Management");
+        boundrylistFromJson.add(innerJsonArray);
+
+        // Example boundary list from UI (List<String>)
+        List<String> boundrylistFromUI = List.of("Boundary Type", "Boundary Name", "Front To Back Platform", "Asset Management");
+
+        // Check if "Asset Management" exists in both lists
+        String elementToCheck = "Asset Management";
+        boolean result = doesElementExistInBoth(boundrylistFromJson, boundrylistFromUI, elementToCheck);
+
+        // Print the result
+        if (result) {
+            System.out.println("\"Asset Management\" exists in both the JSON list and the UI list.");
+        } else {
+            System.out.println("\"Asset Management\" does not exist in both lists.");
+        }
+    }
+
+    public static void main(String[] args) {
+        // Create an instance of BoundaryListChecker
+        BoundaryListChecker checker = new BoundaryListChecker();
+
+        // Run the example usage
+        checker.exampleUsage();
+    }
+}
