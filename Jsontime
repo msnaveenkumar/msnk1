@@ -1,0 +1,53 @@
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+
+public class JsonUtility {
+
+    // Method to get maturity level based on the latest insertion time
+    public int getMaturityLevelBasedOnInsertionTime(String jsonResponse) {
+        int maturityLevel = -1;
+        Instant latestInsertionTime = Instant.MIN;
+
+        // Parse the JSON response
+        JSONObject jsonObject = new JSONObject(jsonResponse);
+        JSONArray dataArray = jsonObject.getJSONArray("data"); // Assuming "data" is the key for the array of objects
+
+        for (int i = 0; i < dataArray.length(); i++) {
+            JSONObject item = dataArray.getJSONObject(i);
+            String insertionTimeStr = item.getString("insertionTime");
+            int currentMaturityLevel = item.getInt("maturityLevel");
+
+            // Parse the insertion time and check if it’s the latest
+            try {
+                Instant insertionTime = Instant.parse(insertionTimeStr);
+                if (insertionTime.isAfter(latestInsertionTime)) {
+                    latestInsertionTime = insertionTime;
+                    maturityLevel = currentMaturityLevel;
+                }
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format for insertionTime: " + insertionTimeStr);
+            }
+        }
+
+        return maturityLevel;
+    }
+
+    // Main method with example usage
+    public static void main(String[] args) {
+        JsonUtility utility = new JsonUtility();
+        String jsonResponse = """
+                {
+                    "data": [
+                        {"maturityLevel": 3, "insertionTime": "2024-10-01T10:15:30Z"},
+                        {"maturityLevel": 5, "insertionTime": "2024-10-02T11:00:00Z"},
+                        {"maturityLevel": 4, "insertionTime": "2024-09-29T14:45:00Z"}
+                    ]
+                }
+                """;
+
+        int maturityLevel = utility.getMaturityLevelBasedOnInsertionTime(jsonResponse);
+        System.out.println("Maturity Level based on latest insertion time: " + maturityLevel);
+    }
+}
