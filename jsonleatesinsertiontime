@@ -1,0 +1,74 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.Comparator;
+import java.util.Optional;
+
+public class JsonUtility {
+
+    public int getMaturityLevelFromJsonWithLatestInsertTimeAndDisregardedIsFalse(String jsonResponse) {
+        try {
+            // Parse the JSON response
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonResponse);
+
+            // Find the node with the latest insertTime where disregarded is false
+            Optional<JsonNode> latestNode = getLatestNodeWithDisregardedFalse(rootNode);
+
+            // Return the maturityLevel of the latest node
+            return latestNode.map(node -> node.get("maturityLevel").asInt()).orElse(-1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    private Optional<JsonNode> getLatestNodeWithDisregardedFalse(JsonNode rootNode) {
+        return rootNode.elements().next()
+            .stream()
+            .filter(node -> !node.get("disregarded").asBoolean()) // Filter where disregarded is false
+            .max(Comparator.comparing(node -> node.get("insertTime").asText())); // Sort by latest insertTime
+    }
+
+    public static void main(String[] args) {
+        String jsonResponse = "[\n" +
+                "    {\n" +
+                "        \"batchUuid\": \"40ef6731-f532-4491-b5e8-a3d40051d071\",\n" +
+                "        \"manifestUuid\": \"14075563-02cc-4268-b25d-18ffe548a426\",\n" +
+                "        \"meta\": \"edap\",\n" +
+                "        \"project\": \"fdc_activities\",\n" +
+                "        \"release\": \"2024.06.16-212\",\n" +
+                "        \"fileLocation\": \"/ms/dist/edap/PROJ/fdc_activities/2023.11.16-212/common/msde-train/casc\",\n" +
+                "        \"insertTime\": \"2023-11-17T07:35:39.862111\",\n" +
+                "        \"ingestionType\": \"TRAIN\",\n" +
+                "        \"fdcApiBatchId\": \"c0f03c95-5d74-4792-8938-39deff809ba0\",\n" +
+                "        \"maturityLevel\": 3,\n" +
+                "        \"disregarded\": false,\n" +
+                "        \"lastTimeDisregarded\": \"2023-08-29T03:20:27.236316\",\n" +
+                "        \"auditCount\": 8,\n" +
+                "        \"auditComment\": null\n" +
+                "    },\n" +
+                "    {\n" +
+                "        \"batchUuid\": \"6f3dcccf-4395-4e07-aae7-740bac68cb6c\",\n" +
+                "        \"manifestUuid\": \"46821871-215f-4aed-b41c-18661f100a72\",\n" +
+                "        \"meta\": \"edap\",\n" +
+                "        \"project\": \"fdc_automation1\",\n" +
+                "        \"release\": \"2024.06.29-1\",\n" +
+                "        \"fileLocation\": \"/ms/dist/edap/PROJ/fdc_automation/2024.05.29-1/common/msde-train/casc\",\n" +
+                "        \"insertTime\": \"2024-05-29T08:11:33.837276\",\n" +
+                "        \"ingestionType\": \"TRAIN\",\n" +
+                "        \"fdcApiBatchId\": \"98c4449f-3653-4395-9e37-fb8e8408d097\",\n" +
+                "        \"maturityLevel\": 1,\n" +
+                "        \"disregarded\": true,\n" +
+                "        \"lastTimeDisregarded\": null,\n" +
+                "        \"auditCount\": 0,\n" +
+                "        \"auditComment\": null\n" +
+                "    }\n" +
+                "]";
+
+        JsonUtility utility = new JsonUtility();
+        int maturityLevel = utility.getMaturityLevelFromJsonWithLatestInsertTimeAndDisregardedIsFalse(jsonResponse);
+        System.out.println("Maturity Level: " + maturityLevel);
+    }
+}
