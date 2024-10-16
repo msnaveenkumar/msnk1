@@ -1,0 +1,30 @@
+// Common method to set path parameters
+private RequestSpecification setPathParameters(RequestSpecification request, Map<String, String> pathParams) {
+    if (pathParams != null) {
+        for (Map.Entry<String, String> entry : pathParams.entrySet()) {
+            request.pathParam(entry.getKey(), entry.getValue());
+        }
+    }
+    return request;
+}
+
+// Generic method to perform a GET request
+public Response getRequestWithPathParameter(String baseURL, String route, Map<String, String> pathParams) {
+    RequestSpecification request = buildBaseRequest(baseURL);
+    request = setPathParameters(request, pathParams);
+    return request.get(route);
+}
+
+// Generic method to perform a POST request with a JSON body
+public Response postServiceWithParamsInPath(String baseURL, String endpoint, Map<String, String> pathParams, String jsonFilePath) throws Exception {
+    RequestSpecification request = buildBaseRequest(baseURL);
+    request = setPathParameters(request, pathParams);
+
+    // Reading JSON file content as string
+    File jsonFile = new File(jsonFilePath);
+    InputStream inputStream = new FileInputStream(jsonFile);
+    String jsonText = IOUtils.toString(inputStream, StandardCharsets.UTF_8.name());
+    request.body(jsonText);
+
+    return request.post(endpoint);
+}
