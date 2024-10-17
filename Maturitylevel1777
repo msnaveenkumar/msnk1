@@ -1,0 +1,57 @@
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
+public class MaturityLevelDeterminer {
+
+    // Method to determine maturity level based on acceptance criteria
+    public int determineMaturityLevel(String eonId, int currentLevel, int newMechanismLevel, LocalDate mechanismUsedDate, LocalDate lastLevelChangeDate) {
+        LocalDate today = LocalDate.now();
+        
+        // Scenario 1: Set to Level 3 on successful upload when no other mechanisms have been used
+        if (newMechanismLevel == 3 && lastLevelChangeDate == null) {
+            return 3;
+        }
+
+        // Scenario 2: Set to Level 3 if Level 1/2 mechanisms have not been used in over 2 weeks
+        if (newMechanismLevel == 3 && mechanismUsedDate != null && ChronoUnit.DAYS.between(mechanismUsedDate, today) > 14) {
+            return 3;
+        }
+
+        // Scenario 3: Leave level unchanged if a Level 1 or 2 mechanism has been used within the last 2 weeks
+        if (newMechanismLevel == 3 && mechanismUsedDate != null && ChronoUnit.DAYS.between(mechanismUsedDate, today) <= 14) {
+            return currentLevel;
+        }
+
+        // Scenario 4: Set to Level 1 or 2 if such a mechanism has been used
+        if (newMechanismLevel == 1 || newMechanismLevel == 2) {
+            return newMechanismLevel;
+        }
+
+        // Scenario 5: Set to Level 1 or 2 if such a mechanism has been used, and then train is done again in less than 14 days
+        if ((newMechanismLevel == 1 || newMechanismLevel == 2) && ChronoUnit.DAYS.between(lastLevelChangeDate, today) < 14) {
+            return currentLevel;
+        }
+
+        // Scenario 6: Set to Level 1 or 2 if such a mechanism has been used, and then train done again later in more than 14 days
+        if ((newMechanismLevel == 1 || newMechanismLevel == 2) && ChronoUnit.DAYS.between(lastLevelChangeDate, today) > 14) {
+            return 3;
+        }
+
+        return currentLevel;
+    }
+
+    // Example usage
+    public static void main(String[] args) {
+        MaturityLevelDeterminer determiner = new MaturityLevelDeterminer();
+        
+        // Example inputs for the different scenarios
+        String eonId = "1234";
+        int currentLevel = 1;
+        int newMechanismLevel = 3;
+        LocalDate mechanismUsedDate = LocalDate.now().minusDays(20);  // 20 days ago
+        LocalDate lastLevelChangeDate = null; // Or set to LocalDate.now().minusDays(x) for other cases
+        
+        int result = determiner.determineMaturityLevel(eonId, currentLevel, newMechanismLevel, mechanismUsedDate, lastLevelChangeDate);
+        System.out.println("Maturity Level: " + result);
+    }
+}
