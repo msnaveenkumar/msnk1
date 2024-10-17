@@ -1,0 +1,125 @@
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.stream.StreamSupport;
+
+public class JsonUtility {
+
+    // Method that combines getMaturityLevel with acceptance criteria
+    public int getMaturityLevelFromJsonWithLatestInsertTimeAndDisregardedIsFalse(String jsonResponse) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonResponse);
+
+            // Find the node with the latest insertTime where disregarded is false
+            Optional<JsonNode> latestNode = getLatestNodeWithDisregardedFalse(rootNode);
+
+            // Calculate maturity level based on criteria if the latest node is found
+            return latestNode
+                    .map(node -> calculateMaturityLevelBasedOnCriteria(
+                            node.get("maturityLevel").asInt(),
+                            LocalDate.parse(node.get("insertTime").asText(), DateTimeFormatter.ISO_DATE_TIME),
+                            node.get("disregarded").asBoolean(),
+                            node.has("lastLevelChangeDate") ? LocalDate.parse(node.get("lastLevelChangeDate").asText(), DateTimeFormatter.ISO_DATE) : null,
+                            node.has("mechanismUsedDate") ? LocalDate.parse(node.get("mechanismUsedDate").asText(), DateTimeFormatter.ISO_DATE) : null
+                    ))
+                    .orElse(-1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    // Private helper method to get the latest node where disregarded is false
+    private Optional<JsonNode> getLatestNodeWithDisregardedFalse(JsonNode rootNode) {
+        return StreamSupport.stream(rootNode.spliterator(), false)
+            .filter(node -> node.has("disregarded") && !node.get("disregarded").asBoolean())
+            .max(Comparator.comparing(node -> node.get("insertTime").asText()));
+    }
+
+    // Method to determine maturity level based on acceptance criteria
+    private int calculateMaturityLevelBasedOnCriteria(int currentLevel, LocalDate insertTime, boolean disregarded, LocalDate lastLevelChangeDate, LocalDate mechanismUsedDate) {
+        LocalDate today = LocalDate.now();
+
+        // Scenario 1: Set to Level 3 on successful upload when no other mechanisms have been used
+        if (currentLevel == 3 && lastLevelChangeDate == null) {
+            return 3;
+        }
+
+        // Scenario 2: Set to Level 3 if Level 1/2 mechanisms have not been used in over 2 weeks
+        if (currentLevel == 3 && mechanismUsedDate != null && ChronoUnit.DAYS.between(mechanismUsedDate, today) > 14) {
+            return 3;
+        }
+
+        // Scenario 3: Leave level unchanged if a Level 1 or 2 mechanism has been used within the last 2 weeks
+        if (currentLevel == 3 && mechanismUsedDate != null && ChronoUnit.DAYS.between(mechanismUsedDate, today) <= 14) {
+            return currentLevel;
+        }
+
+        // Scenario 4: Set to Level 1 or 2 if such a mechanism has been used
+        if (currentLevel == 1 || currentLevel == 2) {
+            return currentLevel;
+        }
+
+        // Scenario 5: Set to Level 1 or 2 if such a mechanism has been used, and then train is done again in less than 14 days
+        if ((currentLevel == 1 || currentLevel == 2) && lastLevelChangeDate != null && ChronoUnit.DAYS.between(lastLevelChangeDate, today) < 14) {
+            return currentLevel;
+        }
+
+        // Scenario 6: Set to Level 3 if Level 1 or 2 mechanism has been used, and then train done again later in more than 14 days
+        if ((currentLevel == 1 || currentLevel == 2) && lastLevelChangeDate != null && ChronoUnit.DAYS.between(lastLevelChangeDate, today) > 14) {
+            return 3;
+        }
+
+        // Default case
+        return currentLevel;
+    }
+
+    public static void main(String[] args) {
+        String jsonResponse = "[\n" +
+                "    {\n" +
+                "        \"batchUuid\": \"40ef6731-f532-4491-b5e8-a3d40051d071\",\n" +
+                "        \"manifestUuid\": \"14075563-02cc-4268-b25d-18ffe548a426\",\n" +
+                "        \"meta\": \"edap\",\n" +
+                "        \"project\": \"fdc_activities\",\n" +
+                "        \"release\": \"2024.06.16-212\",\n" +
+                "        \"fileLocation\": \"/ms/dist/edap/PROJ/fdc_activities/2023.11.16-212/common/msde-train/casc\",\n" +
+                "        \"insertTime\": \"2023-11-17T07:35:39.862111\",\n" +
+                "        \"ingestionType\": \"TRAIN\",\n" +
+                "        \"fdcApiBatchId\": \"c0f03c95-5d74-4792-8938-39deff809ba0\",\n" +
+                "        \"maturityLevel\": 3,\n" +
+                "        \"disregarded\": false,\n" +
+                "        \"lastTimeDisregarded\": \"2023-08-29T03:20:27.236316\",\n" +
+                "        \"auditCount\": 8,\n" +
+                "        \"auditComment\": null\n" +
+                "    },\n" +
+                "    {\n" +
+                "        \"batchUuid\": \"6f3dcccf-4395-4e07-aae7-740bac68cb6c\",\n" +
+                "        \"manifestUuid\": \"46821871-215f-4aed-b41c-18661f100a72\",\n" +
+                "        \"meta\": \"edap\",\n" +
+                "        \"project\": \"fdc_automation1\",\n" +
+                "        \"release\": \"2024.06.29-1\",\n" +
+                "        \"fileLocation\": \"/ms/dist/edap/PROJ/fdc_automation/2024.05.29-1/common/msde-train/casc\",\n" +
+                "        \"insertTime\": \"2024-05-29T08:11:33.837276\",\n" +
+                "        \"ingestionType\": \"TRAIN\",\n" +
+                "        \"fdcApiBatchId\": \"98c4449f-3653-4395-9e37-fb8e8408d097\",\n" +
+                "        \"maturityLevel\": 1,\n" +
+                "        \"disregarded\": true,\n" +
+                "        \"lastTimeDisregarded\": null,\n" +
+                "        \"auditCount\": 0,\n" +
+                "        \"auditComment\": null\n" +
+                "    }\n" +
+                "]";
+
+        JsonUtility utility = new JsonUtility();
+        int maturityLevel = utility.getMaturityLevelFromJsonWithLatestInsertTimeAndDisregardedIsFalse(jsonResponse);
+        System.out.println("Maturity Level based on criteria: " + maturityLevel);
+    }
+}
