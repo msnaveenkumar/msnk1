@@ -1,0 +1,94 @@
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+import java.util.List;
+
+public class ShadowDOMFileUpload {
+
+    public static void main(String[] args) {
+        // Set up the ChromeDriver (ensure you have the appropriate WebDriver installed)
+        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
+        WebDriver driver = new ChromeDriver();
+
+        try {
+            // Open the target webpage
+            driver.get("your-website-url");
+
+            // JavaScriptExecutor to access Shadow DOM elements
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // Element name to find (e.g., shadow root tag)
+            String rootElementName = "campfire-enterprise-file-upload";
+            
+            // The file path to upload
+            String filePath = "/path/to/your/file.json";
+
+            // Call the method to find the root element and upload the file
+            findAndSendKeysToShadowRoot(js, driver, rootElementName, filePath);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Close the browser after the task
+            driver.quit();
+        }
+    }
+
+    // Method to find the shadow root by name and send keys to the file input
+    private static void findAndSendKeysToShadowRoot(JavascriptExecutor js, WebDriver driver, String rootElementName, String filePath) {
+        try {
+            // Find the shadow root element by name
+            WebElement shadowHost = driver.findElement(By.tagName(rootElementName));
+            if (shadowHost != null) {
+                // Get the shadow root
+                Object shadowRoot = js.executeScript("return arguments[0].shadowRoot", shadowHost);
+
+                // Check if shadow root exists
+                if (shadowRoot != null) {
+                    System.out.println("Shadow root found for: " + rootElementName);
+
+                    // Find the input element inside the shadow root for file upload
+                    WebElement fileUploadInput = (WebElement) js.executeScript(
+                        "return arguments[0].querySelector('input[type=\"file\"]')", shadowRoot);
+
+                    if (fileUploadInput != null) {
+                        System.out.println("File input found inside shadow root, sending file: " + filePath);
+                        
+                        // Highlight the file input element (optional)
+                        highlightElement(js, fileUploadInput);
+                        
+                        // Send the file to the input element
+                        fileUploadInput.sendKeys(filePath);
+                    } else {
+                        System.out.println("File input not found inside shadow root of " + rootElementName);
+                    }
+                } else {
+                    System.out.println("No shadow root found for: " + rootElementName);
+                }
+            } else {
+                System.out.println("Shadow host element not found: " + rootElementName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Helper method to highlight a WebElement by changing its background color
+    private static void highlightElement(JavascriptExecutor js, WebElement element) {
+        // Highlight the element by setting a red background and a yellow border
+        js.executeScript("arguments[0].style.backgroundColor = 'yellow'; arguments[0].style.border = '2px solid red';", element);
+
+        // Optionally wait for a short moment to make the highlighting visible
+        try {
+            Thread.sleep(500);  // Wait for 500 milliseconds
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Remove the highlighting
+        js.executeScript("arguments[0].style.backgroundColor = ''; arguments[0].style.border = '';", element);
+    }
+}
