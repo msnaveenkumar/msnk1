@@ -1,0 +1,31 @@
+private static void findAndSendKeysToShadowRoot(JavascriptExecutor js, WebDriver driver, String rootElementName, String filePath) {
+    try {
+        // Find the shadow host element by tag name
+        WebElement shadowHost = driver.findElement(By.tagName(rootElementName));
+
+        if (shadowHost != null) {
+            // Retrieve the shadow root using JavaScript
+            Object shadowRoot = js.executeScript("return arguments[0].shadowRoot", shadowHost);
+
+            // Use the shadow root to query the file input
+            WebElement fileUploadInput = (WebElement) js.executeScript(
+                "return arguments[0].querySelector('input[type=\"file\"]')", shadowRoot);
+
+            if (fileUploadInput != null) {
+                System.out.println("File input found inside shadow root, sending file: " + filePath);
+
+                // Highlight the file input element (optional)
+                highlightElement(js, fileUploadInput);
+
+                // Send the file to the input element
+                fileUploadInput.sendKeys(filePath);
+            } else {
+                System.out.println("File input not found inside shadow root of " + rootElementName);
+            }
+        } else {
+            System.out.println("Shadow host element not found: " + rootElementName);
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
