@@ -1,0 +1,77 @@
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+
+public class ShadowDOMTraversal {
+
+    public static void main(String[] args) {
+        // Set up the ChromeDriver (ensure you have the appropriate WebDriver installed)
+        System.setProperty("webdriver.chrome.driver", "path/to/chromedriver");
+        WebDriver driver = new ChromeDriver();
+
+        try {
+            // Open the target webpage
+            driver.get("your-website-url");
+
+            // JavaScriptExecutor to access Shadow DOM elements
+            JavascriptExecutor js = (JavascriptExecutor) driver;
+
+            // List of shadow host tags based on the given screenshot
+            String[] shadowHosts = {
+                "campfire-enterprise-modal", 
+                "campfire-enterprise-overlay", 
+                "campfire-enterprise-container", 
+                "campfire-enterprise-grid", 
+                "campfire-enterprise-progress-tracker", 
+                "campfire-enterprise-col", 
+                "campfire-enterprise-header", 
+                "campfire-enterprise-file-upload"
+            };
+
+            // Start traversing from the first shadow host
+            WebElement currentElement = driver.findElement(By.tagName(shadowHosts[0]));
+
+            for (int i = 1; i < shadowHosts.length; i++) {
+                // Get the shadow root of the current element using JavaScript
+                Object shadowRoot = js.executeScript("return arguments[0].shadowRoot", currentElement);
+
+                if (shadowRoot == null) {
+                    System.out.println("Shadow root not found for host: " + shadowHosts[i - 1]);
+                    break;
+                }
+
+                // Find the next shadow host inside the current shadow root
+                currentElement = findInShadowRoot(js, shadowRoot, shadowHosts[i]);
+
+                if (currentElement == null) {
+                    System.out.println("Shadow host element not found: " + shadowHosts[i]);
+                    break;
+                }
+            }
+
+            // Interact with the final shadow element (e.g., file upload input)
+            if (currentElement != null) {
+                WebElement fileUploadInput = (WebElement) js.executeScript(
+                    "return arguments[0].querySelector('input[type=\"file\"]')", currentElement
+                );
+                fileUploadInput.sendKeys("/path/to/your/file.json");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Close the browser after the task
+            driver.quit();
+        }
+    }
+
+    // Helper method to find a shadow host inside a shadow root
+    private static WebElement findInShadowRoot(JavascriptExecutor js, Object shadowRoot, String tagName) {
+        // Safely find the element within the shadow root using JavaScript
+        return (WebElement) js.executeScript(
+            "return arguments[0].querySelector(arguments[1])", shadowRoot, tagName
+        );
+    }
+}
